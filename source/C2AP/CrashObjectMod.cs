@@ -63,18 +63,26 @@ namespace C2AP
 
 
             liftMod = new CrashObjectMod(36, 8, mods, modInstructionLines);
-            montyHallMod = new CrashObjectMod(36, 3, new(), new(), (_object, _gool) =>
+            App.Client.Options.TryGetValue("randomize_warp_destinations", out var option_randomize_warp_room);
+            if (option_randomize_warp_room == null)
+                return;
+            int randomize_warp_room = Convert.ToInt32(option_randomize_warp_room.ToString());
+
+            if (randomize_warp_room != 0)
             {
-                uint _staticData = CrashObject.GetItemAddressFromEntry(_gool, 2);
-                for (int w = 0; w < Addresses.MontyHallWarpRoomInfoStaticDataOffset.Length; ++w)
+                montyHallMod = new CrashObjectMod(36, 3, new(), new(), (_object, _gool) =>
                 {
-                    uint offset = Addresses.MontyHallWarpRoomInfoStaticDataOffset[w];
-                    for (uint i = 0; i < 5; ++i)
+                    uint _staticData = CrashObject.GetItemAddressFromEntry(_gool, 2);
+                    for (int w = 0; w < Addresses.MontyHallWarpRoomInfoStaticDataOffset.Length; ++w)
                     {
-                        Memory.WriteByteArray(_staticData + offset + i * 8, BitConverter.GetBytes(WarpRoomRandomizer.MontyHallDestinations[w * 5 + i] << 8));
+                        uint offset = Addresses.MontyHallWarpRoomInfoStaticDataOffset[w];
+                        for (uint i = 0; i < 5; ++i)
+                        {
+                            Memory.WriteByteArray(_staticData + offset + i * 8, BitConverter.GetBytes(WarpRoomRandomizer.MontyHallDestinations[w * 5 + i] << 8));
+                        }
                     }
-                }
-            });
+                });
+            }
 
             modRefreshTimer.Interval = 1000; // ms - adjust to desired tick rate
             modRefreshTimer.AutoReset = true;
@@ -107,7 +115,7 @@ namespace C2AP
                 modList.Add(this);
             }
         }
-        
+
         public void EditMod(List<byte[]> newMods, List<uint> newModInstructionLines)
         {
 
@@ -131,7 +139,7 @@ namespace C2AP
             {
                 return;
             }
-
+            Log.Information("Refreshing mod");
             //here we need to re-instate our modification
             _address = CrashObject.FindObjectAddress(_type, _subtype);
             if (_address == 0 || _address == CrashObject.cacheOffset) return;
