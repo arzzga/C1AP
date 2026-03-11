@@ -98,7 +98,7 @@ public partial class App : Application
     public void Start()
     {
         Context = new MainWindowViewModel("0.6.2");
-        Context.ClientVersion = "v0.2.0";
+        Context.ClientVersion = "v0.3.0";
         Context.ConnectClicked += Context_ConnectClicked;
         Context.CommandReceived += (e, a) =>
         {
@@ -151,11 +151,57 @@ public partial class App : Application
                 break;
             case "exec":
                 //Log.Logger.Information("execing");
-                List<uint> objs = CrashObject.FindAllObjectAddresses(3, 16);
-                Log.Logger.Information($"objs found:");
-                foreach (uint obj in objs)
+                //List<uint> objs = CrashObject.FindAllObjectAddresses(3, 16);
+                //Log.Logger.Information($"objs found:");
+                //foreach (uint obj in objs)
+                //{
+                //    Log.Logger.Information($"obj address: {obj:X}, state: {Memory.ReadUInt(obj + 0x1C):X}, ID: {Memory.ReadUInt(obj + 0xB8):X}, various: {Memory.ReadUInt(obj + 0xD4):X}");
+                //}
+                //Log.Logger.Information($"clearedededed");
+                //Memory.WriteByteArray(Addresses.GemLocationsAddress, new byte[8]);
+                uint crashAddress = CrashObject.FindObjectAddress(0, 0);
+                if (crashAddress != 0 && crashAddress != CrashObject.cacheOffset)
                 {
-                    Log.Logger.Information($"obj address: {obj:X}, state: {Memory.ReadUInt(obj + 0x1C):X}, ID: {Memory.ReadUInt(obj + 0xB8):X}, various: {Memory.ReadUInt(obj + 0xD4):X}");
+                    
+                    //big crash
+                    Memory.Write(crashAddress + 0x78, (int) (Memory.ReadInt(crashAddress + 0x78) * 1.5));
+                    Memory.Write(crashAddress + 0x7C, (int) (Memory.ReadInt(crashAddress + 0x7C) * 1.5));
+                    Memory.Write(crashAddress + 0x80, (int) (Memory.ReadInt(crashAddress + 0x80) * 1.5));
+                    //Memory.Write(crashAddress + 0x84, 0x1000000);
+                    //Memory.Write(crashAddress + 0x20, (short) 0x7000);
+
+                    //for (uint i = 0x28; i <= 0x3E; i+= 0x2) {
+                    //    Memory.Write(crashAddress + i, (short)0x7000);
+                    //}
+                    Log.Logger.Information($"bscale x: 0x{Memory.ReadInt(crashAddress + 0x78):X}");
+                    Log.Logger.Information($"bscale y: 0x{Memory.ReadInt(crashAddress + 0x7C):X}");
+                    Log.Logger.Information($"bscale z: 0x{Memory.ReadInt(crashAddress + 0x80):X}");
+                    //small crash
+                    //Memory.Write(crashAddress + 0x78, (int) (Memory.ReadInt(crashAddress + 0x78) * 0.2));
+                    //Memory.Write(crashAddress + 0x7C, (int) (Memory.ReadInt(crashAddress + 0x7C) * 0.2));
+                    //Memory.Write(crashAddress + 0x80, (int) (Memory.ReadInt(crashAddress + 0x80) * 0.2));
+                    
+
+                    //memsnaptimer = new Timer();
+                    //memsnaptimer.Interval = 6000;
+                    //memsnaptimer.AutoReset = false;
+                    //memsnaptimer.Elapsed += (s, ev) =>
+                    //{
+                    //    Memory.WriteByteArray(0, memsnap);
+                    //};
+                    //memsnaptimer.Enabled = true;
+                    //memsnaptimer.Start();
+
+                    Log.Logger.Information($"scale x: 0x{Memory.ReadInt(crashAddress + 0x78):X}");
+                    Log.Logger.Information($"scale y: 0x{Memory.ReadInt(crashAddress + 0x7C):X}");
+                    Log.Logger.Information($"scale z: 0x{Memory.ReadInt(crashAddress + 0x80):X}");
+                    Log.Logger.Information($"velocity x: 0x{Memory.ReadInt(crashAddress + 0x84):X}");
+                    Log.Logger.Information($"velocity y: 0x{Memory.ReadInt(crashAddress + 0x88):X}");
+                    Log.Logger.Information($"velocity z: 0x{Memory.ReadInt(crashAddress + 0x8C):X}");
+
+                    Log.Logger.Information($"speed: 0x{Memory.ReadInt(crashAddress + 0x104):X}");
+                    Log.Logger.Information($"cam zoom: 0x{Memory.ReadInt(crashAddress + 0x120):X}");
+
                 }
                 break;
             case "itemstate":
@@ -174,25 +220,25 @@ public partial class App : Application
                     Log.Logger.Information($"{location.Name}");
                 }
                 break;
-            //case "debug_markbosses":
-            //    uint address;
-            //    int[] bossBits = [
-            //        Addresses.levelNameToId["Dr. N. Gin"],
-            //        Addresses.levelNameToId["Ripper Roo"],
-            //        Addresses.levelNameToId["Komodo Brothers"],
-            //        Addresses.levelNameToId["Tiny Tiger"],
-                    
-            //    ];
-            //    for (int i = 0; i < bossBits.Length; i++)
-            //    {
-            //        address = Addresses.LevelExitsAddress + (uint)bossBits[i] / 8;
-            //        int bit = bossBits[i] % 8;
-            //        Memory.WriteBit(address, bit, true);
-            //    }
-            //    break;
-            //case "debug_sendgoal":
-            //    Client.SendGoalCompletion();
-            //    break;
+            case "debug_markbosses":
+                uint address;
+                int[] bossBits = [
+                    Addresses.levelNameToId["Dr. N. Gin"],
+                    Addresses.levelNameToId["Ripper Roo"],
+                    Addresses.levelNameToId["Komodo Brothers"],
+                    Addresses.levelNameToId["Tiny Tiger"],
+
+                ];
+                for (int i = 0; i < bossBits.Length; i++)
+                {
+                    address = Addresses.LevelExitsAddress + (uint)bossBits[i] / 8;
+                    int bit = bossBits[i] % 8;
+                    Memory.WriteBit(address, bit, true);
+                }
+                break;
+                //case "debug_sendgoal":
+                //    Client.SendGoalCompletion();
+                //    break;
 
         }
         string[] args = command.Split(' ');
@@ -303,7 +349,7 @@ public partial class App : Application
             return;
         }
         Client = new ArchipelagoClient(client);
-        //Client.ShouldSaveStateOnItemReceived = false;
+        Client.ShouldSaveStateOnItemReceived = false;
 
         Memory.GlobalOffset = Memory.GetDuckstationOffset();
 
@@ -316,7 +362,7 @@ public partial class App : Application
         Client.Connected += OnConnected;
         Client.Disconnected += OnDisconnected;
 
-        await Client.Connect(e.Host, "Crash2");
+        await Client.Connect(e.Host, "Crash2", "");
         if (!Client.IsConnected)
         {
             Log.Logger.Error("Your host seems to be invalid.  Please confirm that you have entered it correctly.");
@@ -371,7 +417,7 @@ public partial class App : Application
         //if (Client.GameState == null) return;
         //UpdateGemLocationsChecked();
         //SyncGameState();
-        Log.Logger.Information($"location: {e.CompletedLocation.Name}");
+        //Log.Logger.Information($"location: {e.CompletedLocation.Name}");
         UpdateCrashState();
         CheckGoalCondition();
     }

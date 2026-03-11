@@ -17,9 +17,12 @@
   <ItemGroup>
     <EmbeddedResource Include="fruitbundles.txt" />
   </ItemGroup>
-
+	
   <ItemGroup>
-    <PackageReference Include="Archipelago.Core" Version="1.2.3" />
+	<ProjectReference Include="..\..\..\Archipelago.Core\Archipelago.Core.csproj" />
+  </ItemGroup>
+	
+  <ItemGroup>
     <PackageReference Include="Archipelago.Core.AvaloniaGUI" Version="0.2.2" />
     <PackageReference Include="Avalonia" Version="$(AvaloniaVersion)" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="$(AvaloniaVersion)" />
