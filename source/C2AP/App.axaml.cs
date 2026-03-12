@@ -98,7 +98,7 @@ public partial class App : Application
     public void Start()
     {
         Context = new MainWindowViewModel("0.6.2");
-        Context.ClientVersion = "v0.3.0";
+        Context.ClientVersion = "v0.3.0-pre";
         Context.ConnectClicked += Context_ConnectClicked;
         Context.CommandReceived += (e, a) =>
         {
@@ -162,8 +162,11 @@ public partial class App : Application
                 uint crashAddress = CrashObject.FindObjectAddress(0, 0);
                 if (crashAddress != 0 && crashAddress != CrashObject.cacheOffset)
                 {
-                    
+
                     //big crash
+                    Log.Logger.Information($"scale x: 0x{Memory.ReadInt(crashAddress + 0x78):X}");
+                    Log.Logger.Information($"scale y: 0x{Memory.ReadInt(crashAddress + 0x7C):X}");
+                    Log.Logger.Information($"scale z: 0x{Memory.ReadInt(crashAddress + 0x80):X}");
                     Memory.Write(crashAddress + 0x78, (int) (Memory.ReadInt(crashAddress + 0x78) * 1.5));
                     Memory.Write(crashAddress + 0x7C, (int) (Memory.ReadInt(crashAddress + 0x7C) * 1.5));
                     Memory.Write(crashAddress + 0x80, (int) (Memory.ReadInt(crashAddress + 0x80) * 1.5));
@@ -386,6 +389,7 @@ public partial class App : Application
         //}
         Client.MonitorLocations(GameLocations);
         FruitCheck.Initialize();
+        Traps.Initialize();
         CrashObjectMod.Initialize();
         //Archipelago.MultiClient.Net.
     }
@@ -632,10 +636,19 @@ public partial class App : Application
                 }
                 IncrementByte(Addresses.WumpaGlobalAddress);
                 return;
-                //break;
-            //default:
-            //    SyncGameState();
-            //    break;
+            case "Big Crash Trap":
+                Traps.AddTrap(Traps.TrapType.BigCrash);
+                return;
+            case "Small Crash Trap":
+                Traps.AddTrap(Traps.TrapType.SmallCrash);
+                return;
+            case "No Lives Trap":
+                Traps.AddTrap(Traps.TrapType.NoLives);
+                return;
+            case "Jetpack Controls Trap":
+                Traps.AddTrap(Traps.TrapType.JetpackControls);
+                return;
+
         }
         UpdateCrashState();
     }

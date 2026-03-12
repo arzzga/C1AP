@@ -4,6 +4,7 @@ namespace C2AP
 {
     public static class Addresses
     {
+        public const uint CacheOffset = 0x80000000;
         public const uint CrystalsReceivedAddress = 0x0000EA00; //64 bits
         public const uint GemsReceivedAddress = 0x0000EA10; //64 bits
 
@@ -25,6 +26,8 @@ namespace C2AP
         //public const uint CrystalLocationsSwapAddress = 0x0000EA20; // 64 bits
 
         public const uint GemLocationsAddress = 0x0006CEC0;
+
+        public const uint InputsAddress = 0x00069BB8; //32 bits, each bit is an input
 
         public const uint LevelIdAddress = 0x6ce08; //32 bits (hopefully)
 

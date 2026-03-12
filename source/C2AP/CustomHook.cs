@@ -143,6 +143,9 @@ namespace C2AP
                 case "addiu":
                     opcode = 0x9; //might need to flip rt and rs, but it doesn't matter right now since they are equal in our usage
                     break;
+                case "andi":
+                    opcode = 0xC;
+                    break;
                 //case "lw":
                 //    opcode = 0x23;
                 //    break;
@@ -154,6 +157,7 @@ namespace C2AP
             switch (instruction[0])
             {
                 case "addiu":
+                case "andi":
                     rs = EncodeRegister(instruction[2]);
                     rt = EncodeRegister(instruction[1]);
                     break;
@@ -267,6 +271,25 @@ namespace C2AP
                             //Log.Information($"instruction: {BitConverter.ToString(instructionBytes)}");
                             //break;
                         }
+                    case "lui":
+                        if (instruction.Length != 3)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0xF; //lui
+                        rt = EncodeRegister(instruction[1]);
+                        rs = 0;
+
+                        instruction[2] = instruction[2].Replace("0x", "");
+                        address = Convert.ToUInt32(instruction[2], 16);
+                        upper = (ushort)(address);
+                        //upper++;
+
+                        immed = upper;
+
+                        bytes.AddRange(ConvertToBytes(opcode, rs, rt, immed));
+                        break;
                     case "lw":
                         if (instruction.Length != 3)
                         {
@@ -359,9 +382,62 @@ namespace C2AP
                         rt = EncodeRegister(instruction[3]);
                         bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
                         break;
+                    case "and":
+                        if (instruction.Length != 4)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0; //r type
+                        funct = 0x24; //and
+                        rd = EncodeRegister(instruction[1]);
+                        rs = EncodeRegister(instruction[2]);
+                        rt = EncodeRegister(instruction[3]);
+                        bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
+                        break;
+                    case "sll":
+                        if (instruction.Length != 4)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0; //r type
+                        funct = 0x00; //sll
+                        rd = EncodeRegister(instruction[1]);
+                        rt = EncodeRegister(instruction[2]);
+                        shamt = Convert.ToUInt32(instruction[3].Replace("0x", ""), 16) & 0x1F;
+                        bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
+                        break;
+                    case "srl":
+                        if (instruction.Length != 4)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0; //r type
+                        funct = 0x02; //srl
+                        rd = EncodeRegister(instruction[1]);
+                        rt = EncodeRegister(instruction[2]);
+                        shamt = Convert.ToUInt32(instruction[3].Replace("0x", ""), 16) & 0x1F;
+                        bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
+                        break;
+                    case "nor":
+                        if (instruction.Length != 4)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0; //r type
+                        funct = 0x27; //nor
+                        rd = EncodeRegister(instruction[1]);
+                        rs = EncodeRegister(instruction[2]);
+                        rt = EncodeRegister(instruction[3]);
+                        bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
+                        break;
                     case "beq":
                     case "bne":
                     case "addiu":
+                    case "andi":
                     //case "lw":
                         bytes.AddRange(ConvertIType(instruction));
                         break;
@@ -435,7 +511,7 @@ namespace C2AP
 
             if (freeBytes.Any(b => b != 0x00))
             {
-                Log.Debug($"CustomHook: Free space at 0x{_freeAddress:X} is not empty!");
+                Log.Warning($"CustomHook: Free space at 0x{_freeAddress:X} is not empty!");
                 //return;
             }
 
