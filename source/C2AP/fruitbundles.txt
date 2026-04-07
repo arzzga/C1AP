@@ -189,14 +189,14 @@ F-94
 14-CC
 14-CD
 14-CE
-#Secret Entrance Secret Stash Part 1
+#Secret Entrance Secret Stash Part 1*
 15-BB
 15-BA
 15-BC
 15-B9
 15-BF
 15-BE
-#Secret Entrance Secret Stash Part 2
+#Secret Entrance Secret Stash Part 2*
 16-B2
 16-B3
 16-B6
@@ -1305,7 +1305,7 @@ D-62
 7-5B
 7-5A
 7-59
-#Third Checkpoint Uphill
+#Third Checkpoint Uphill*
 8-6D
 8-6B
 8-6A
@@ -1794,7 +1794,7 @@ B-6C
 9-35
 9-34
 9-33
-#Secret Warp
+#Secret Warp*
 A-52
 A-54
 A-51
@@ -2128,9 +2128,11 @@ F-1B9
 10-1CF
 10-1CB
 10-1CA
-#Death Route Drop Down "Impossible" Wumpas
+#Death Route Drop Down "Impossible" Wumpas*
 11-1C9
 11-1CE
+11-1C8
+11-1CD
 #Drop Down Part 1
 12-D6
 12-D7
@@ -2567,7 +2569,7 @@ F-6C
 9-D5
 9-D6
 9-D7
-#Bonus Final Jump
+#Bonus Final Jump*
 A-E2
 A-E1
 A-E3

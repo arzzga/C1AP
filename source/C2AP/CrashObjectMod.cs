@@ -61,32 +61,39 @@ namespace C2AP
             mods.Add(CustomHook.ConvertAsm([$"addiu $v1, $zero, 0x{crystalCount:X}"]).ToArray());
 
             List<uint> modInstructionLines = [6507 - magicOffset / 4, 6507];
-
-
             liftMod = new CrashObjectMod(36, 8, mods, modInstructionLines);
-            montyHallMod = new CrashObjectMod(36, 3, new(), new(), (_object, _gool) =>
+
+
+            App.Client.Options.TryGetValue("randomize_warp_destinations", out var option_randomize_warp_room);
+            if (option_randomize_warp_room == null)
+                return;
+            int randomize_warp_room = Convert.ToInt32(option_randomize_warp_room.ToString());
+            if (randomize_warp_room != 0)
             {
-                uint _staticData = CrashObject.GetItemAddressFromEntry(_gool, 2);
-                for (int w = 0; w < Addresses.MontyHallWarpRoomInfoStaticDataOffset.Length; ++w)
+                montyHallMod = new CrashObjectMod(36, 3, new(), new(), (_object, _gool) =>
                 {
-                    uint offset = Addresses.MontyHallWarpRoomInfoStaticDataOffset[w];
-                    for (uint i = 0; i < 5; ++i)
+                    uint _staticData = CrashObject.GetItemAddressFromEntry(_gool, 2);
+                    for (int w = 0; w < Addresses.MontyHallWarpRoomInfoStaticDataOffset.Length; ++w)
                     {
-                        Memory.WriteByteArray(_staticData + offset + i * 8, BitConverter.GetBytes(WarpRoomRandomizer.MontyHallDestinations[w * 5 + i] << 8));
+                        uint offset = Addresses.MontyHallWarpRoomInfoStaticDataOffset[w];
+                        for (uint i = 0; i < 5; ++i)
+                        {
+                            Memory.WriteByteArray(_staticData + offset + i * 8, BitConverter.GetBytes(WarpRoomRandomizer.MontyHallDestinations[w * 5 + i] << 8));
+                        }
                     }
-                }
-            });
-            warpSecretMod = new CrashObjectMod(1, 9, new(), new(), (_object, _gool) =>
-            {
-                // patch gool instructions directly
-                uint _instructions = CrashObject.GetItemAddressFromEntry(_gool, 1);
-                Memory.WriteByteArray(_instructions + 4 * 339, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[26]) << 12) | (0xE26))); // 0x2D
-                Memory.WriteByteArray(_instructions + 4 * 323, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[27]) << 12) | (0xE26))); // 0x2B
-                Memory.WriteByteArray(_instructions + 4 * 327, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[28]) << 12) | (0xE26))); // 0x2C
-                Memory.WriteByteArray(_instructions + 4 * 335, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[29]) << 12) | (0xE26))); // 0x2F
-                Memory.WriteByteArray(_instructions + 4 * 331, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[30]) << 12) | (0xE26))); // 0x2E
-            });
-            warpSecretMod._levelId = -1;
+                });
+                warpSecretMod = new CrashObjectMod(1, 9, new(), new(), (_object, _gool) =>
+                {
+                    // patch gool instructions directly
+                    uint _instructions = CrashObject.GetItemAddressFromEntry(_gool, 1);
+                    Memory.WriteByteArray(_instructions + 4 * 339, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[26]) << 12) | (0xE26))); // 0x2D
+                    Memory.WriteByteArray(_instructions + 4 * 323, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[27]) << 12) | (0xE26))); // 0x2B
+                    Memory.WriteByteArray(_instructions + 4 * 327, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[28]) << 12) | (0xE26))); // 0x2C
+                    Memory.WriteByteArray(_instructions + 4 * 335, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[29]) << 12) | (0xE26))); // 0x2F
+                    Memory.WriteByteArray(_instructions + 4 * 331, BitConverter.GetBytes((0x11 << 24) | ((0x800 | WarpRoomRandomizer.MontyHallSpawnList[30]) << 12) | (0xE26))); // 0x2E
+                });
+                warpSecretMod._levelId = -1;
+            }
 
             modRefreshTimer.Interval = 500; // ms - adjust to desired tick rate
             modRefreshTimer.AutoReset = true;
@@ -119,7 +126,7 @@ namespace C2AP
                 modList.Add(this);
             }
         }
-        
+
         public void EditMod(List<byte[]> newMods, List<uint> newModInstructionLines)
         {
 

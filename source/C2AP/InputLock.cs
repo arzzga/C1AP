@@ -38,14 +38,15 @@ namespace C2AP
         public static void Initialize()
         {
             //0x15A38 works, also 0x15A0C, 0x15A44
-            _inputHook.InsertHook(0x15A54, 0xf000);
+            _inputHook.InsertHook(0x15A38, 0xf000); //0x15A54
+            Log.Error("Inputlock needs to use a different free address");
         }
 
         private static void RefreshInputHook()
         {
             uint val = (uint)_inputflag << 16;
             _inputHook.ReplaceAsm([
-                        "la $t0, 0x80069bb8",
+                        $"la $t0, 0x{Addresses.InputsAddress + Addresses.CacheOffset:X}",
                         "lw $t1, 0($t0)",
                         $"la $t2, 0x{val:X}",
                         "or $t1, $t1, $t2",

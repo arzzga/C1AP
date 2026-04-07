@@ -10,7 +10,7 @@ namespace C2AP
 {
     internal class BaseHooks
     {
-        private static CustomHook? ApItemsHook;
+        public static CustomHook? ApItemsHook;
         //private static CustomHook? CenterLiftHook1;
         //private static CustomHook? CenterLiftHook2;
         //private static CustomHook? CenterLiftHook3;
