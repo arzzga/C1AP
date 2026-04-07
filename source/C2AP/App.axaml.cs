@@ -277,54 +277,6 @@ public partial class App : Application
                 }
             }
         }
-        //if (args.Length >= 2) { 
-        //    if (args[0] == "b")
-        //    {
-        //        if (args[1] == "clear")
-        //        {
-        //            FruitCheck.DebugScanFruitList();
-        //            return;
-        //        }
-        //        Log.Logger.Information("bundling");
-        //        string filepath = "bundles.txt";
-        //        int bundleId = -1;
-        //        using (StreamReader reader = new StreamReader(filepath))
-        //        {
-        //            string line;
-        //            while ((line = reader.ReadLine()) != null)
-        //            {
-        //                if (line[0] == '#') continue;
-        //                bundleId = Convert.ToInt32(line.Split('-')[0], 16);
-        //            }
-        //        }
-        //        bundleId++;
-        //        List<uint> fruitList = FruitCheck.DebugScanFruitList();
-        //        string name = "#";
-        //        for (int i = 1; i < args.Length; i++)
-        //        {
-        //            name += $"{args[i]}";
-        //            if (i < args.Length - 1)
-        //            {
-        //                name += " ";
-        //            }
-        //        }
-        //        List<string> content = [name];
-        //        foreach (uint fruit in fruitList)
-        //        {
-        //            content.Add($"{bundleId:X}-{fruit:X}");
-        //        }
-        //        try
-        //        {
-        //            File.AppendAllLines(filepath, content);
-        //            Log.Logger.Information("Content appended successfully.");
-        //        }
-        //        catch (Exception ex)
-        //        {
-        //            Log.Logger.Information($"An error occurred: {ex.Message}");
-        //        }
-        //        Log.Logger.Information("bundled");
-        //    }
-        //}
     }
     private async void Context_ConnectClicked(object? sender, ConnectClickedEventArgs e)
     {
