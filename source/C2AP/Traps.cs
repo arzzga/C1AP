@@ -234,7 +234,7 @@ namespace C2AP
         private static void ApplyNoLives()
         {
             int lives = Memory.ReadInt(Addresses.LivesGlobalAddress);
-            if (lives != 0)
+            if ((lives > 0 && lives < 4) || storedLives == 0) // written this way to prevent gameover from giving the player many extra lives
             {
                 storedLives += lives;
                 Memory.Write(Addresses.LivesGlobalAddress, 0);
