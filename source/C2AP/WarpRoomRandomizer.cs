@@ -89,7 +89,7 @@ namespace C2AP
                         MontyHallDestinations[i] = new_montyhall_spawn_list[i] & 0x3F;
                     }
                     // now modify spawn list
-                    for (int i = 0; i < OriginalMontyHallSpawnList.Length - 5; ++i)
+                    for (int i = 0; i < OriginalMontyHallSpawnList.Length; ++i)
                     {
                         int corrected_spawn_index = GameLevelIdToApWorldSecretLevelId(OriginalMontyHallSpawnList[i]);
                         if (!montyhall_remap.ContainsKey(corrected_spawn_index))
