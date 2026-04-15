@@ -18,6 +18,7 @@ namespace C2AP
         public class FruitBundle
         {
             public SortedSet<uint> collectedFruits = new SortedSet<uint>();
+            public SortedSet<uint> requiredFruits = new SortedSet<uint>();
             public int requiredFruitCount;
             public int locationId;
             public string locationName = "";
@@ -33,7 +34,13 @@ namespace C2AP
 
         public static List<FruitBundle> ?Bundles;
 
+        private static Dictionary<uint, (int start, int end)> ?LevelIdToBundle;
+
+        private static Dictionary<int, int> ?LocationIdToBundle;
+
         private static Timer checkFruitTimer = new Timer();
+
+        private static uint lastLevelId = 0;
         public static void Initialize()
         {
             if (FruitIdToBundle == null || Bundles == null)
@@ -61,7 +68,9 @@ namespace C2AP
                     {
                         //if (reader == null) return;
                         FruitIdToBundle = new Dictionary<uint, int>();
+                        LocationIdToBundle = new Dictionary<int, int>();
                         Bundles = new List<FruitBundle>();
+                        LevelIdToBundle = new Dictionary<uint, (int start, int end)>();
 
                         int bundleLocationIdOffset = 10000;
                         if (fruit_sanity == 2)
@@ -75,6 +84,7 @@ namespace C2AP
                         int currentBundle = -1;
                         string levelname = "";
                         string bundlename = "";
+                        int start = 0;
                         FruitBundle bundle = new();
                         while ((line = reader.ReadLine()) != null)
                         {
@@ -105,6 +115,11 @@ namespace C2AP
                             string[] split = line.Split('-');
                             if (split.Length == 1)
                             {
+                                if (levelid != 0)
+                                {
+                                    LevelIdToBundle[levelid] = (start, totalBundles);
+                                }
+                                start = totalBundles;
                                 levelid = Convert.ToUInt32(split[0], 16);
                                 currentBundle = -1;
                             }
@@ -116,6 +131,7 @@ namespace C2AP
                                     Bundles.Add(new FruitBundle());
                                     bundle = Bundles.Last();
                                     bundle.locationId = bundleLocationIdOffset + totalBundles;
+                                    LocationIdToBundle[bundle.locationId] = totalBundles;
                                     totalBundles++;
 
                                 }
@@ -123,6 +139,7 @@ namespace C2AP
                                 id = id << 8;
                                 id += levelid;
                                 FruitIdToBundle[id] = totalBundles - 1;
+                                bundle.requiredFruits.Add(id);
                                 bundle.requiredFruitCount++;
                             }
                         }
@@ -138,6 +155,7 @@ namespace C2AP
                         //    });
 
                         //}
+                        LevelIdToBundle[levelid] = (start, totalBundles);
                         Log.Logger.Debug($"Loaded {totalBundles} fruit bundles");
                     }
                 }
@@ -146,17 +164,38 @@ namespace C2AP
                     Log.Logger.Error($"An error occurred: {e.Message}");
                 }
             }
-            checkFruitTimer.Interval = 1500; // ms - adjust to desired tick rate
+            checkFruitTimer.Interval = 1400; // ms - adjust to desired tick rate
             checkFruitTimer.AutoReset = true;
             checkFruitTimer.Elapsed += (s, ev) =>
             {
+                uint levelid = Memory.ReadByte(Addresses.LevelIdAddress + 1);
+                
+                if (levelid != lastLevelId)
+                {
+                    uint crashAddress = CrashObject.FindObjectAddress(0, 0);
+                    if (crashAddress != 0 && crashAddress != CrashObject.cacheOffset)
+                    {
+                        
+                        SetDeadFlags(levelid);
+                        Log.Debug($"setting dead flags for new level {levelid:X}, old level {lastLevelId:X}");
+                        lastLevelId = levelid;
+                    }
+                } 
                 ScanCollectedFruitList();
             };
             checkFruitTimer.Enabled = true;
         }
-
+        public static bool IsInitialized()
+        {
+            return FruitIdToBundle != null && Bundles != null;
+        }
         public static void ScanCollectedFruitList()
         {
+            //Memory.Write(Addresses.CurrentEntityFlagList + 0x1E * 4, 2);
+            //Memory.Write(Addresses.CurrentEntityFlagList + 0x21 * 4, 2);
+            //Memory.Write(Addresses.CurrentEntityFlagList + 0x23 * 4, 2);
+            //Memory.Write(Addresses.CurrentEntityFlagList + 0x25 * 4, 2);
+
             if (FruitIdToBundle == null) return;
             if (Bundles == null) return;
 
@@ -202,6 +241,7 @@ namespace C2AP
                 return;
             }
             //Log.Logger.Information("scanning3");
+            SetDeadFlagForFruitId(id);
             FruitBundle bundle = Bundles[value];
             if (bundle.collectedFruits.Add(id))
             {
@@ -218,6 +258,51 @@ namespace C2AP
             //Log.Logger.Information("scanning6");
         }
 
+        private static void SetDeadFlags(uint levelid)
+        {
+            Log.Debug($"setting dead flags for level {levelid:X}");
+            if (LevelIdToBundle == null) return;
+            if (Bundles == null) return;
+
+            if (!LevelIdToBundle.TryGetValue(levelid, out (int start, int end) indices)) return;
+            
+            //(int start, int end) indices = LevelIdToBundle[levelid];
+            Log.Debug($"start: {indices.start}, end: {indices.end}");
+            for (int i = indices.start; i < indices.end; i++)
+            {
+                FruitBundle bundle = Bundles[i];
+                foreach (uint fruitid in bundle.collectedFruits)
+                {
+                    SetDeadFlagForFruitId(fruitid);
+                }
+            }
+            Log.Debug($"finished setting dead flags for level {levelid:X}");
+        }
+        private static void SetDeadFlagForFruitId(uint fruitid)
+        {
+            uint id = fruitid >> 8;
+            Memory.Write(Addresses.CurrentEntityFlagList + id * 4, 2);
+            Memory.Write(Addresses.ContinuePointFlagList + id * 4, 2);
+            Memory.Write(Addresses.ContinuePoint2FlagList + id * 4, 2);
+            Log.Debug($"setting dead flags for fruit {id:X}");
+            Log.Debug($"Address{Addresses.CurrentEntityFlagList + id * 4:X}");
+        }
+
+        public static void CompleteBundle(int locationId)
+        {
+            if (LocationIdToBundle == null) return;
+            if (Bundles == null) return;
+            if (!LocationIdToBundle.TryGetValue(locationId, out int bundleIndex))
+            {
+                Log.Logger.Warning($"Unknown bundle location id: {locationId}");
+                return;
+            }
+            FruitBundle bundle = Bundles[bundleIndex];
+            foreach (uint fruitid in bundle.requiredFruits)
+            {
+                bundle.collectedFruits.Add(fruitid);
+            }
+        }
         public static List<uint> DebugScanFruitList()
         {
             List<uint> list = new List<uint>();

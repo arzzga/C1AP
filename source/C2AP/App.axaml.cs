@@ -98,7 +98,7 @@ public partial class App : Application
     public void Start()
     {
         Context = new MainWindowViewModel("0.6.2");
-        Context.ClientVersion = "v0.3.0-pre2-1";
+        Context.ClientVersion = "v0.3.0-pre3";
         Context.ConnectClicked += Context_ConnectClicked;
         Context.CommandReceived += (e, a) =>
         {
@@ -295,7 +295,7 @@ public partial class App : Application
         //    Log.Logger.Error("Failed to login.  Please check your host, name, and password.");
         //}
         Client.MonitorLocations(GameLocations);
-        FruitCheck.Initialize();
+        //FruitCheck.Initialize();
         Traps.Initialize();
         CrashObjectMod.Initialize();
         //Archipelago.MultiClient.Net.
@@ -444,6 +444,11 @@ public partial class App : Application
         List<Location> locations = Client.LocationState.CompletedLocations.OfType<Location>().ToList();
         foreach (Location location in locations)
         {
+            if (location.Id >= 10000)
+            {
+                FruitCheck.CompleteBundle(location.Id);
+                continue;
+            }
             if (location.Address == 0 || location.AddressBit == 0) continue;
             if (location.Address >= Addresses.GemLocationsAddress && location.Address < Addresses.GemLocationsAddress + 8)
             {
@@ -702,6 +707,10 @@ public partial class App : Application
         // Repopulate hint list.  There is likely a better way to do this using the Get network protocol
         // with keys=[$"hints_{team}_{slot}"].
         Client?.SendMessage("!hint");
+        if (!FruitCheck.IsInitialized())
+        {
+            FruitCheck.Initialize();
+        }
         SyncGameState();
         UpdateCrashState();
     }

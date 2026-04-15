@@ -126,6 +126,15 @@ namespace C2AP
             uint rs;
             uint rt;
             uint immed;
+            switch (instruction[0])
+            {
+                case "bgez":
+                    opcode = 0x1;
+                    rt = 0x1;
+                    rs = EncodeRegister(instruction[1]);
+                    immed = Convert.ToUInt32(instruction[2].Replace("0x", ""), 16) & 0xFFFF;
+                    return ConvertToBytes(opcode, rs, rt, immed);
+            }
 
             if (instruction.Length != 4)
             {
@@ -382,6 +391,19 @@ namespace C2AP
                         rt = EncodeRegister(instruction[3]);
                         bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
                         break;
+                    case "addu":
+                        if (instruction.Length != 4)
+                        {
+                            Log.Error($"CustomHook: Invalid {instruction[0]} instruction format at line {i + 1}, length was {instruction.Length}");
+                            break;
+                        }
+                        opcode = 0; //r type
+                        funct = 0x21; //addu
+                        rd = EncodeRegister(instruction[1]);
+                        rs = EncodeRegister(instruction[2]);
+                        rt = EncodeRegister(instruction[3]);
+                        bytes.AddRange(ConvertToBytes(rs, rt, rd, shamt, funct));
+                        break;
                     case "and":
                         if (instruction.Length != 4)
                         {
@@ -436,6 +458,7 @@ namespace C2AP
                         break;
                     case "beq":
                     case "bne":
+                    case "bgez":
                     case "addiu":
                     case "andi":
                     //case "lw":

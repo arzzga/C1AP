@@ -74,6 +74,10 @@ namespace C2AP
         public const uint PbakId = 0x005f620; //0x8005f388;
         public const uint DemoPointer = 0x0005f670;
 
+        public const uint CurrentEntityFlagList = 0x0006b45c;
+        public const uint ContinuePointFlagList = 0x00060c2c;
+        public const uint ContinuePoint2FlagList = 0x00061c8c;
+
         public static Dictionary<string, int> BitOfLocation = new Dictionary<string, int>
         {
             //crystals

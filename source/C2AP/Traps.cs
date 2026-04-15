@@ -38,7 +38,7 @@ namespace C2AP
             "nor $t1, $t1, $zero",
 
             //"unpress" the controls that will be affected
-            "lui $t3, 0x6c50",//0x6250",
+            "lui $t3, 0x6c50", //0x6250",
             "nor $t2, $t2, $t3",
 
             
@@ -57,6 +57,45 @@ namespace C2AP
             $"andi $t3, $t1, 0x{InputFlag.L1:X}",
             "sll $t3, $t3, 0xc", //shift it to the "down" button
             "or $t2, $t2, $t3", //apply
+
+            // handle analog stick here
+            $"la $t4, 0x{Addresses.InputsAddress + 0x4 + Addresses.CacheOffset:X}", //analog input address
+            $"lw $t5, 0($t4)", 
+            "nop",
+
+
+            "bgez $t5, 0x4", // branch if stick is in up direction
+            "la $t6, 0xC0000000",
+            "subu $t6, $t5, $t6",
+            "bgez $t6, 0xa", // branch to press down if stick is pushed down at least halfway
+
+            //up direction check
+            "la $t6, 0x40000000",
+            "subu $t6, $t6, $t5",
+            "bgez $t6, 0x3", // branch to press up if stick is pushed up at least halfway
+
+            
+
+            "nop",
+            "beq $zero $zero, 0x5", //branch to reset
+            "nop",
+
+            // press up
+            $"ori $t1, $t1, 0x{InputFlag.Up:X}",
+            "beq $zero $zero, 0x2", //branch to reset
+            "nop",
+
+            // press down
+            $"ori $t1, $t1, 0x{InputFlag.Down:X}",
+
+            // reset the up/down angle
+            "la $t6, 0x00FFFFFF",
+            "and $t5, $t5, $t6",
+            "lui $t6, 0x7F00",
+            "addu $t5, $t5, $t6",
+            "sw $t5, 0($t4)",
+            // end of analog stick handling
+
 
             $"andi $t3, $t1, 0x{InputFlag.Up:X}",
             "sll $t3, $t3, 0x19", //shift it to the "circle" button
@@ -186,6 +225,10 @@ namespace C2AP
                     {
                         case TrapType.BigCrash:
                         case TrapType.SmallCrash:
+                            if (GetCurrentCrashSize() > defaultCrashSize) // if crash is big
+                            {
+                                Memory.Write(crashAddress + 0x64, Memory.ReadFloat(crashAddress + 0x64) + 2E-40f);
+                            }
                             ResetCrashSize();
                             break;
                         case TrapType.NoLives:
