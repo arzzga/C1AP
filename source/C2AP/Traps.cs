@@ -26,7 +26,7 @@ namespace C2AP
         private const int defaultCrashSize = 0x1000;
         private static int storedLives;
         private static double bigCrashSizeMult = 1.5;
-        private static double smallCrashSizeMult = 0.2;
+        private static double smallCrashSizeMult = 0.33;
 
         private static CustomHook jetpackControlsHook = new CustomHook([//"nop"]);
             $"la $t0, 0x{Addresses.InputsAddress + Addresses.CacheOffset:X}",
@@ -145,28 +145,28 @@ namespace C2AP
                 Log.Logger.Debug($"option: null");
                 return;
             }
-            App.Client.Options.TryGetValue("small_crash_size", out var smallCrashSize);
-            if (smallCrashSize != null)
-            {
-                Log.Logger.Debug($"option: {smallCrashSize}");
-            }
-            else
-            {
-                Log.Logger.Debug($"option: null");
-                return;
-            }
-            App.Client.Options.TryGetValue("big_crash_size", out var bigCrashSize);
-            if (bigCrashSize != null)
-            {
-                Log.Logger.Debug($"option: {bigCrashSize}");
-            }
-            else
-            {
-                Log.Logger.Debug($"option: null");
-                return;
-            }
-            smallCrashSizeMult = Convert.ToInt32(smallCrashSize.ToString()) / 100.0; //default is 33%
-            bigCrashSizeMult = Convert.ToInt32(bigCrashSize.ToString()) / 100.0; //default is 150%
+            //App.Client.Options.TryGetValue("small_crash_size", out var smallCrashSize);
+            //if (smallCrashSize != null)
+            //{
+            //    Log.Logger.Debug($"option: {smallCrashSize}");
+            //}
+            //else
+            //{
+            //    Log.Logger.Debug($"option: null");
+            //    return;
+            //}
+            //App.Client.Options.TryGetValue("big_crash_size", out var bigCrashSize);
+            //if (bigCrashSize != null)
+            //{
+            //    Log.Logger.Debug($"option: {bigCrashSize}");
+            //}
+            //else
+            //{
+            //    Log.Logger.Debug($"option: null");
+            //    return;
+            //}
+            //smallCrashSizeMult = Convert.ToInt32(smallCrashSize.ToString()) / 100.0; //default is 33%
+            //bigCrashSizeMult = Convert.ToInt32(bigCrashSize.ToString()) / 100.0; //default is 150%
             trapDuration = Convert.ToInt32(trapDurationSeconds.ToString()) * 1000 / tickRate;
             //trapDuration = 100 * 1000 / tickRate;
             crashAddress = CrashObject.FindObjectAddress(0, 0);
