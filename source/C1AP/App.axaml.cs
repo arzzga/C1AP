@@ -5,8 +5,6 @@ using Archipelago.Core.AvaloniaGUI.Views;
 using Archipelago.Core.GameClients;
 using Archipelago.Core.Models;
 using Archipelago.Core.Util;
-using Archipelago.Core.Util.Hook;
-using Archipelago.MultiClient.Net.Enums;
 using Archipelago.MultiClient.Net.MessageLog.Messages;
 using Archipelago.MultiClient.Net.Packets;
 using Avalonia;
@@ -19,11 +17,7 @@ using ReactiveUI;
 using Serilog;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Reactive.Concurrency;
-using System.Text;
-using System.Threading.Tasks;
 using System.Timers;
 using Location = Archipelago.Core.Models.Location;
 using Timer = System.Timers.Timer;
@@ -43,14 +37,14 @@ public partial class App : Application
     /// <summary>
     /// Crash Bandicoot 1 game state tracker
     /// </summary>
-    private class CrashState
+    private class Crash1State
     {
         // 25 gems total (one per level, either clear or colored)
         public uint GemsCollected;
-        public byte[] GemLocations = new byte[4]; // 32 bits for 25 gems (need 4 bytes)
+        public bool[] GemCollected = new bool[25];
     }
 
-    private static CrashState crashState = new CrashState();
+    private static Crash1State crashState = new Crash1State();
 
     public override void Initialize()
     {
@@ -80,7 +74,7 @@ public partial class App : Application
     public void Start()
     {
         Context = new MainWindowViewModel("0.6.5");
-        Context.ClientVersion = "v0.1.0";
+        Context.ClientVersion = "v0.1.0-CB1";
         Context.ConnectClicked += Context_ConnectClicked;
         Context.CommandReceived += (e, a) =>
         {
@@ -93,7 +87,7 @@ public partial class App : Application
         _useQuietHints = true;
 
         Log.Logger.Information("Crash Bandicoot 1 Archipelago Client");
-        Log.Logger.Information("This client requires Crash Bandicoot 1 (NTSC-U or PAL) on DuckStation");
+        Log.Logger.Information("Compatible with Crash Bandicoot 1 (NTSC-U/PAL) on DuckStation");
     }
 
     private void HandleCommand(string command)
@@ -274,28 +268,18 @@ public partial class App : Application
         List<Location> locations = Client.LocationState.CompletedLocations.OfType<Location>().ToList();
         foreach (Location location in locations)
         {
-            if (location.Address == 0 || location.AddressBit == 0) continue;
-
-            // Mark gem as collected in our state tracker
-            if (location.Address == Addresses.GemsCollectedAddress)
+            // Find the gem name from the location
+            foreach (var gemEntry in Addresses.BitOfLocation)
             {
-                int byteIndex = location.AddressBit / 8;
-                int bitIndex = location.AddressBit % 8;
-                crashState.GemLocations[byteIndex] |= (byte)(1 << bitIndex);
+                if (gemEntry.Key == location.Name)
+                {
+                    crashState.GemCollected[gemEntry.Value] = true;
+                    break;
+                }
             }
         }
 
-        // Count total gems received from Archipelago
-        List<Item> items = Client.ItemState.ReceivedItems.ToList();
-        uint gemCount = 0;
-        foreach (Item item in items)
-        {
-            if (item.Name == "Gem")
-            {
-                gemCount++;
-            }
-        }
-        crashState.GemsCollected = gemCount;
+        Log.Logger.Debug($"Game state synced. Gems collected: {CountBits()}/25");
     }
 
     /// <summary>
@@ -303,8 +287,36 @@ public partial class App : Application
     /// </summary>
     public static void UpdateCrashState()
     {
+        // Build gem bitfield from individual flags
+        uint gemBitfield = 0;
+        for (int i = 0; i < 25; i++)
+        {
+            if (crashState.GemCollected[i])
+            {
+                gemBitfield |= (1u << i);
+            }
+        }
+
         // Write gem collection bitfield to emulator memory
-        Memory.WriteByteArray(Addresses.GemsCollectedAddress, crashState.GemLocations);
+        Memory.WriteUInt(Addresses.GemsCollectedAddress, gemBitfield);
+
+        Log.Logger.Debug($"Game state updated. Gems in memory: {CountBits()}/25");
+    }
+
+    /// <summary>
+    /// Count how many gems are currently collected
+    /// </summary>
+    private static int CountBits()
+    {
+        int count = 0;
+        for (int i = 0; i < 25; i++)
+        {
+            if (crashState.GemCollected[i])
+            {
+                count++;
+            }
+        }
+        return count;
     }
 
     /// <summary>
@@ -312,36 +324,26 @@ public partial class App : Application
     /// </summary>
     private async void ItemReceived(object? o, ItemReceivedEventArgs args)
     {
-        Log.Logger.Debug($"Item Received: {JsonConvert.SerializeObject(args.Item)}");
+        Log.Logger.Information($"Item Received: {args.Item.Name}");
 
         switch (args.Item.Name)
         {
             case "Gem":
-                crashState.GemsCollected++;
+            case "Clear Gem":
+            case "Green Gem":
+            case "Orange Gem":
+            case "Blue Gem":
+            case "Red Gem":
+            case "Purple Gem":
+            case "Yellow Gem":
+                // Gem items are handled through location completion
+                Log.Logger.Information($"Gem received!");
                 break;
             case "Life":
-                // Add a life to Crash
-                try
-                {
-                    // Find Crash object and increment lives
-                    // This is a simplified approach - may need adjustment based on actual CB1 structure
-                    Log.Logger.Information("Received an extra life!");
-                }
-                catch (Exception ex)
-                {
-                    Log.Logger.Warning($"Could not give life: {ex.Message}");
-                }
+                Log.Logger.Information("Received an extra life!");
                 break;
             case "Wumpa Fruit":
-                // Add Wumpa fruit to inventory
-                try
-                {
-                    Log.Logger.Information("Received Wumpa Fruit!");
-                }
-                catch (Exception ex)
-                {
-                    Log.Logger.Warning($"Could not give Wumpa Fruit: {ex.Message}");
-                }
+                Log.Logger.Information("Received Wumpa Fruit!");
                 break;
         }
 
@@ -360,9 +362,9 @@ public partial class App : Application
         try
         {
             // Goal: Collect all 25 gems
-            List<Location> locations = Client.LocationState.CompletedLocations.OfType<Location>().ToList();
+            int gemsCollected = CountBits();
             
-            if (locations.Count >= 25)
+            if (gemsCollected >= 25)
             {
                 Log.Logger.Information("All gems collected! Goal achieved!");
                 Timer sendGoal = new Timer();
